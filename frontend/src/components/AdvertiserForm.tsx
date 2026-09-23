@@ -1,6 +1,5 @@
 import { useState } from "react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -39,13 +38,19 @@ export function AdvertiserForm({ onSubmit, isLoading }: Props) {
   const [description, setDescription] = useState("")
   const [budget, setBudget] = useState(5000)
   const [flightDays, setFlightDays] = useState(14)
+  const [touched, setTouched] = useState(false)
 
   return (
     <form
       className="flex flex-col gap-3"
       onSubmit={(e) => {
         e.preventDefault()
-        if (description.trim()) onSubmit(description.trim(), budget, flightDays)
+        if (!description.trim()) {
+          setTouched(true)
+          document.getElementById("description")?.focus()
+          return
+        }
+        onSubmit(description.trim(), budget, flightDays)
       }}
     >
       <label htmlFor="description" className="text-sm font-medium text-foreground">
@@ -53,6 +58,7 @@ export function AdvertiserForm({ onSubmit, isLoading }: Props) {
       </label>
       <Textarea
         id="description"
+        aria-invalid={touched && !description.trim()}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder={PLACEHOLDER}
@@ -60,19 +66,22 @@ export function AdvertiserForm({ onSubmit, isLoading }: Props) {
         className="resize-none"
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-muted-foreground">Or try:</span>
+      {touched && !description.trim() && (
+        <p className="text-xs text-destructive">Add a sentence about your business first.</p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span className="text-xs text-muted-foreground/70">Try an example</span>
         {EXAMPLES.map((example) => (
-          <Badge
+          <button
             key={example.label}
-            asChild
-            variant="outline"
-            className="cursor-pointer font-normal hover:bg-accent"
+            type="button"
+            onClick={() => setDescription(example.text)}
+            disabled={isLoading}
+            className="rounded-sm text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
           >
-            <button type="button" onClick={() => setDescription(example.text)} disabled={isLoading}>
-              {example.label}
-            </button>
-          </Badge>
+            {example.label}
+          </button>
         ))}
       </div>
 
@@ -105,7 +114,7 @@ export function AdvertiserForm({ onSubmit, isLoading }: Props) {
             className="h-9 w-24"
           />
         </div>
-        <Button type="submit" disabled={isLoading || !description.trim()} className="ml-auto">
+        <Button type="submit" disabled={isLoading} className="ml-auto">
           {isLoading ? "Building campaign…" : "Generate campaign"}
         </Button>
       </div>

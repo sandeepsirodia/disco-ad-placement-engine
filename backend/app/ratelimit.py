@@ -13,8 +13,11 @@ from collections import defaultdict
 
 from fastapi import HTTPException, Request
 
-# Generous for a human clicking through a demo, ruinous for a script.
-MAX_REQUESTS = int(os.environ.get("RATE_LIMIT_REQUESTS", "20"))
+# Off unless the deployment asks for it: render.yaml sets this to 20 for the
+# public demo, while local development stays unthrottled. It previously
+# defaulted to 20 everywhere, which silently 429'd local work after twenty
+# campaigns - including the eval harness, which makes fifteen in one run.
+MAX_REQUESTS = int(os.environ.get("RATE_LIMIT_REQUESTS", "0"))
 WINDOW_SECONDS = int(os.environ.get("RATE_LIMIT_WINDOW_SECONDS", "3600"))
 
 _hits: dict[str, list[float]] = defaultdict(list)
