@@ -1,8 +1,10 @@
 import type { Viability } from "@/lib/api"
 
+// Semantic status tokens, not raw palette classes: the three campaign states
+// are one scale, so they read from one layer and both themes stay in sync.
 const STYLES: Record<Viability["status"], string> = {
-  ok: "border-emerald-600/30 bg-emerald-600/10",
-  weak: "border-amber-500/40 bg-amber-500/10",
+  ok: "border-success/30 bg-success/10",
+  weak: "border-warning/40 bg-warning/10",
   no_match: "border-destructive/40 bg-destructive/10",
 }
 
