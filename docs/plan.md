@@ -1,5 +1,12 @@
 # Disco Take-Home — Implementation Plan
 
+> **Historical.** This is the plan written *before* building, kept deliberately
+> so the reasoning is visible alongside what actually happened. Several calls
+> here changed once real output existed — persona scoring dropped to three
+> components, embeddings stopped being a 'cut', and viability/reach/fit-floor
+> logic didn't exist yet. For the current design see
+> [`architecture.md`](./architecture.md).
+
 **Goal:** Advertiser one-liner → ranked publishers (with reasoning) → 3-5 persona-tuned creatives → structured campaign config. Explainable at every step, graceful on messy input, built in a 6-8h budget.
 
 **Architecture:** Hybrid deterministic + LLM pipeline, split across a Python backend and a React frontend. The LLM only ever does language (extraction, narration, copywriting); a plain scoring function — not the LLM — does the actual publisher/persona ranking, because ranking has to be auditable and reproducible, and "ask the model to rank and hope" doesn't survive contact with a real catalog or a compliance review.
