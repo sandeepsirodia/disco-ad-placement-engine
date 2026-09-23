@@ -5,10 +5,7 @@
 FROM node:22-slim AS frontend
 WORKDIR /build
 COPY frontend/package.json frontend/package-lock.json ./
-# openapi-typescript still declares a typescript@^5 peer range while this
-# project is on 6; it runs fine on 6 (it generated the types in src/types/).
-# The lockfile was resolved with this flag, so npm ci needs it to match.
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 

@@ -6,9 +6,12 @@ install:
 
 # Regenerate frontend/src/types/api.ts from the backend's Pydantic models -
 # run this after changing anything in backend/app/models.py.
+# openapi-typescript runs via npx rather than as a devDependency: it's a
+# one-shot codegen tool the build never needs, and its stale typescript@^5
+# peer range broke `npm install` for anyone cloning fresh.
 types:
 	cd backend && . .venv/bin/activate && python scripts/export_openapi.py
-	cd frontend && npx openapi-typescript openapi.json -o src/types/api.ts
+	cd frontend && npx -y openapi-typescript@7 openapi.json -o src/types/api.ts
 	rm frontend/openapi.json
 
 test:
