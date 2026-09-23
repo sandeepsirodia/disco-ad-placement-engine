@@ -4,13 +4,17 @@ An advertiser describes their business in a sentence. The system returns ranked 
 
 ## Run it
 
+You'll need your own Gemini API key — free, instant, no billing setup: **https://aistudio.google.com/apikey**
+
 ```bash
-cp backend/env.sample backend/.env    # add a Gemini key: https://aistudio.google.com/apikey
+cp backend/env.sample backend/.env    # paste your key on the LLM_API_KEY line
 make install
 make dev                              # backend :8000, frontend :5173
 ```
 
 `make test` runs the scoring suite. `make types` regenerates the frontend's TypeScript types from the backend's Pydantic models.
+
+The key stays server-side: `backend/.env` is gitignored, every model call happens in FastAPI, and the React bundle contains no key handling of any kind. Swapping providers (OpenAI, Groq, a local Ollama) is three env vars in that same file — `app/llm.py` doesn't change.
 
 **Stack:** React + TypeScript + shadcn/ui · Python + FastAPI + Pydantic · any OpenAI-compatible LLM (defaults to Gemini; switching providers is three env vars, not a code change).
 
