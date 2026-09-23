@@ -18,6 +18,16 @@ never fall back to generic category language ("great products", "quality you
 can trust"). Mirror the persona's specific `messaging_preferences` register.
 Never reference or imply anything in the persona's `disinterested_in` list.
 
+The advertiser's description usually contains several distinct facts (a
+material, a price comparison, a location, a process detail, a founder story).
+Pick the ONE fact that this persona's own `messaging_preferences` and
+`category_affinities` make most relevant to *them specifically* - not
+whichever fact is most prominent in the advertiser's own sentence. Two
+different personas reading the same advertiser should end up anchored on two
+different facts, because they care about different things. If your headline
+would work equally well for any other persona of this advertiser, you've
+anchored on the advertiser's favorite fact instead of this persona's.
+
 **Never invent a product attribute the advertiser did not state.** No claims
 about sourcing, certifications, shipping, packaging, materials, ingredients,
 pricing, or guarantees unless they appear in the advertiser profile. If this
@@ -50,6 +60,6 @@ Advertiser profile:
 
 Persona:
 {persona_json}
-
+{avoid_note}
 Write one headline (under 10 words) and one body (2-3 sentences) for this
 persona.

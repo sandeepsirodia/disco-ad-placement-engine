@@ -12,7 +12,7 @@ make install
 make dev                              # backend :8000, frontend :5173
 ```
 
-`GET /health` is a cheap liveness endpoint (used to keep the free hosted instance awake without invoking the pipeline). `make test` runs the scoring suite; `make types` regenerates the frontend types from the backend's Pydantic models. The key stays server-side — `.env` is gitignored and the React bundle contains no key handling.
+`make test` runs the scoring suite. The key stays server-side; the React bundle never sees it.
 
 **Stack:** React + TypeScript + shadcn/ui · Python + FastAPI + Pydantic · any OpenAI-compatible LLM (defaults to Gemini; switching providers is a handful of env vars, not a code change).
 
@@ -22,21 +22,18 @@ make dev                              # backend :8000, frontend :5173
 
 Not purity: *"why was this publisher excluded?"* has to answer the same way twice. With named components (`category_fit`, `price_fit`, `audience_fit`, `tone_fit`) the exclusion reason is a lookup — the lowest-scoring one — not a re-generation that might differ on the second ask. The narration LLM explains real computed numbers; it never invents one.
 
-```mermaid
-flowchart LR
-  A["advertiser<br/>sentence"] --> B["① extraction<br/><b>LLM</b>"]
-  B --> C["② publisher scoring<br/><b>deterministic</b>"]
-  B --> D["③ persona scoring<br/><b>deterministic</b>"]
-  C --> E["④ narration<br/><b>LLM</b>"]
-  D --> E
-  D --> F["⑤ creative<br/><b>LLM</b>"]
-  C --> G["⑥ assembly<br/><b>deterministic</b>"]
-  E --> G
-  F --> G
-  G --> H["CampaignConfig"]
-```
+Pipeline: ① extraction (LLM) → ② publisher + ③ persona scoring (deterministic) → ④ narration + ⑤ creative (LLM, concurrent) → ⑥ assembly (deterministic). Full diagrams and the decision log: [`docs/architecture.md`](docs/architecture.md).
 
-④ and ⑤ run concurrently — both need only the scores, not each other. Full diagrams and the decision log: [`docs/architecture.md`](docs/architecture.md).
+## Campaign config shape
+
+`CampaignConfig` (`backend/app/models.py`) holds what a buyer needs to launch and what a reviewer needs to audit:
+
+- **`publishers[]`**: each one carries its own budget %/$, bid model, bid range, and estimated impressions. Real ad systems set bids per line item, not per campaign. Budget splits by fit score, but no publisher gets more than 20% of its deliverable inventory, so reach limits spend.
+- **`bid_strategy`**: CPM by default (awareness at these AOVs). It switches to CPC when the advertiser competes on price. Bid ranges come from standard retail-media rate bands, and the publisher's AOV sets where it sits inside the band.
+- **`targeting`**: age and gender come from the extracted profile; income tiers and geos come from the recommended publishers' audiences, so every value exists in the catalog.
+- **`viability`**: kept separate from extraction confidence. A `no_match` config still shows the ranking but puts $0 behind it, because a config that says "don't launch" shouldn't also contain a spend plan.
+- **`excluded_publishers`, `personas`, `creatives`**: the reasoning ships inside the config, so the output can be audited without the UI.
+- **`meta`**: model and pipeline version, so you can tell which pipeline version and model produced a run.
 
 ## Easy vs hard
 
@@ -48,7 +45,7 @@ flowchart LR
 2. **Irrelevant publishers scored 36/100.** `price_fit` plus a neutral `audience_fit` paid out ~36 points for zero category overlap — a sock retailer looked "close on AOV" to a dental SaaS. Those signals are only meaningful *conditional* on category relevance, so category now gates the composite. Off-topic advertisers dropped 36 → 6.
 3. **Fit and viability are different axes.** *"B2B SaaS for dental practices"* is a high-confidence extraction with zero viable inventory. Confidence asks whether we understood the input; viability asks whether this catalog can serve it. Conflating them tells a vague-but-servable advertiser it's in the wrong market.
 
-Also: reach is a constraint, not a tiebreaker (spend is capped at 20% of deliverable inventory), and weak personas make the model fabricate product claims to bridge the gap — fixed with a fit floor plus an explicit no-fabrication rule.
+Also: weak personas make the model fabricate product claims to bridge the gap. I fixed that with a fit floor plus an explicit no-fabrication rule.
 
 **Every one of these was found by running all 15 sample advertisers** (`eval/run_examples.py` → `eval/output.md`), not by reasoning about the code. Most are invisible on the happy-path example.
 

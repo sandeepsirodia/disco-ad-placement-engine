@@ -5,7 +5,7 @@ parallel reimplementation is worth nothing."""
 import asyncio
 
 from app.campaign import TOP_PERSONAS, TOP_PUBLISHERS, assemble_campaign
-from app.creative import generate_creative
+from app.creative import dedupe_creatives, generate_creative
 from app.data import load_personas, load_publishers
 from app.extraction import extract_advertiser_profile
 from app.models import CampaignConfig
@@ -50,6 +50,12 @@ async def run_pipeline(
         asyncio.to_thread(generate_creative, profile, persona_by_id[s.persona_id]) for s in selected_personas
     ]
     reasoning, *creatives = await asyncio.gather(reasoning_task, *creative_tasks)
+
+    # Independent calls can't see each other's output, so two personas
+    # anchored on the same fact come back as the same clause reordered
+    # (found in eval/output.md). This is the only place that can catch it -
+    # sequential by nature, but at most 3-5 creatives so it's cheap.
+    creatives = await asyncio.to_thread(dedupe_creatives, profile, creatives, persona_by_id)
 
     # Step 6 - deterministic assembly.
     return assemble_campaign(

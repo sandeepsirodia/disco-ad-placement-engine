@@ -183,3 +183,30 @@ def test_unmeasurable_tone_is_neutral_not_zero():
     # A publisher whose notes share no literal token with the brand tone.
     velvetline = next(p for p in publishers if p.id == "pub_013")
     assert tone_fit(profile, velvetline) >= UNKNOWN_SIGNAL - 0.01
+
+
+def test_headline_overlap_catches_reordered_duplicates():
+    """Real pairs from eval/output.md, with the actual measured values -
+    there's no clean separation (a genuinely fine pair and a real duplicate
+    can score in the same band), so this pins the calibrated threshold
+    against real examples rather than an invented clean-cut case."""
+    from app.creative import HEADLINE_OVERLAP_THRESHOLD, headline_overlap
+
+    # Real duplicates: same two facts (hand-poured, Vermont / soy wax), reordered.
+    dup_a = headline_overlap(
+        "Natural soy wax. Zero synthetic fragrances.",
+        "Hand-poured in Vermont from natural soy wax.",
+    )
+    dup_b = headline_overlap(
+        "Give The Shells That Ski Patrollers Wear",
+        "What Ski Patrollers Wear in the Backcountry",
+    )
+    assert dup_a > HEADLINE_OVERLAP_THRESHOLD, f"expected a real duplicate to be flagged, got {dup_a}"
+    assert dup_b > HEADLINE_OVERLAP_THRESHOLD, f"expected a real duplicate to be flagged, got {dup_b}"
+
+    # Genuinely distinct: material-focused vs. gifting-focused, sharing one word.
+    distinct = headline_overlap(
+        "Activewear Built from Recycled Ocean Plastic",
+        "A premium activewear gift with real purpose.",
+    )
+    assert distinct < HEADLINE_OVERLAP_THRESHOLD, f"expected distinct angles not to be flagged, got {distinct}"
