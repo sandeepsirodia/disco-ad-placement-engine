@@ -10,6 +10,7 @@ export type Viability = components["schemas"]["Viability"]
 export async function createCampaign(
   businessDescription: string,
   totalBudgetUsd: number,
+  flightDays: number,
 ): Promise<CampaignConfig> {
   const res = await fetch("/api/campaign", {
     method: "POST",
@@ -17,6 +18,7 @@ export async function createCampaign(
     body: JSON.stringify({
       business_description: businessDescription,
       total_budget_usd: totalBudgetUsd,
+      flight_days: flightDays,
     }),
   })
 

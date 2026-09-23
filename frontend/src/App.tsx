@@ -2,11 +2,11 @@ import { useState } from "react"
 
 import { AdvertiserForm } from "@/components/AdvertiserForm"
 import { CampaignConfigView } from "@/components/CampaignConfigView"
+import { CampaignProgress } from "@/components/CampaignProgress"
 import { CreativeGrid } from "@/components/CreativeGrid"
 import { PersonaCards } from "@/components/PersonaCards"
 import { PublisherList } from "@/components/PublisherList"
 import { ViabilityBanner } from "@/components/ViabilityBanner"
-import { Skeleton } from "@/components/ui/skeleton"
 import { type CampaignConfig, createCampaign } from "@/lib/api"
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -23,11 +23,11 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleSubmit(description: string, budget: number) {
+  async function handleSubmit(description: string, budget: number, flightDays: number) {
     setIsLoading(true)
     setError(null)
     try {
-      const result = await createCampaign(description, budget)
+      const result = await createCampaign(description, budget, flightDays)
       setCampaign(result)
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.")
@@ -55,13 +55,7 @@ export default function App() {
         </div>
       )}
 
-      {isLoading && (
-        <div className="flex flex-col gap-4">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </div>
-      )}
+      {isLoading && <CampaignProgress />}
 
       {campaign && !isLoading && (
         <div className="flex flex-col gap-10">

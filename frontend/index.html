@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend</title>
+    <script>
+      // The .dark token set exists in index.css but nothing applied it,
+      // so every viewer got the light theme. Inline + pre-paint to avoid a flash.
+      document.documentElement.classList.toggle(
+        'dark',
+        window.matchMedia('(prefers-color-scheme: dark)').matches,
+      )
+    </script>
   </head>
   <body>
     <div id="root"></div>

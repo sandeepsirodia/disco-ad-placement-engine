@@ -1,4 +1,8 @@
+import { Check, Copy } from "lucide-react"
+import { useState } from "react"
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import type { CampaignConfig } from "@/lib/api"
@@ -14,6 +18,7 @@ function Field({ label, value }: { label: string; value: string }) {
 
 export function CampaignConfigView({ config }: { config: CampaignConfig }) {
   const { targeting, budget, bid_strategy } = config
+  const [copied, setCopied] = useState(false)
 
   return (
     <Card>
@@ -39,7 +44,21 @@ export function CampaignConfigView({ config }: { config: CampaignConfig }) {
         <Accordion type="single" collapsible>
           <AccordionItem value="raw" className="border-none">
             <AccordionTrigger className="text-xs">View raw campaign config (JSON)</AccordionTrigger>
-            <AccordionContent>
+            <AccordionContent className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => {
+                  navigator.clipboard.writeText(JSON.stringify(config, null, 2))
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 2000)
+                }}
+              >
+                {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                {copied ? "Copied" : "Copy JSON"}
+              </Button>
               <pre className="max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">
                 {JSON.stringify(config, null, 2)}
               </pre>

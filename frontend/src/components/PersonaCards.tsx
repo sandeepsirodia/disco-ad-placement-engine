@@ -12,6 +12,7 @@ export function PersonaCards({ personas }: { personas: PersonaMatch[] }) {
             <Badge
               variant={persona.fit_label === "strong" ? "default" : "secondary"}
               className="tabular-nums whitespace-nowrap"
+              aria-label={`Fit ${persona.fit_label}, score ${persona.fit_score.toFixed(0)} out of 100`}
             >
               {persona.fit_label} · {persona.fit_score.toFixed(0)}
             </Badge>

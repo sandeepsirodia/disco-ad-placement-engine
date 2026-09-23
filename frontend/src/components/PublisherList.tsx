@@ -39,7 +39,11 @@ export function PublisherList({
           <Card key={pub.publisher_id}>
             <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
               <CardTitle className="text-base">{pub.name}</CardTitle>
-              <Badge variant="secondary" className="tabular-nums">
+              <Badge
+                variant="secondary"
+                className="tabular-nums"
+                aria-label={`Match score ${pub.match_score.toFixed(0)} out of 100`}
+              >
                 {pub.match_score.toFixed(0)}
               </Badge>
             </CardHeader>
