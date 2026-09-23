@@ -46,8 +46,10 @@ export function PublisherList({
             <CardContent className="flex flex-col gap-3">
               <p className="text-sm text-muted-foreground">{pub.reasoning}</p>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span>
-                  ${pub.budget_allocation_usd.toLocaleString()} ({pub.budget_allocation_pct.toFixed(0)}%)
+                <span className={pub.budget_allocation_usd === 0 ? "text-destructive" : undefined}>
+                  {pub.budget_allocation_usd === 0
+                    ? "no spend allocated"
+                    : `$${pub.budget_allocation_usd.toLocaleString()} (${pub.budget_allocation_pct.toFixed(0)}%)`}
                 </span>
                 <span>·</span>
                 <span>

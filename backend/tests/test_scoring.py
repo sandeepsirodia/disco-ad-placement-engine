@@ -6,7 +6,8 @@ fabricated fixture that could drift from the actual data.
 """
 
 from app.data import load_personas, load_publishers
-from app.models import AdvertiserProfile
+from app.campaign import PUBLISHER_FIT_FLOOR, assemble_campaign
+from app.models import AdvertiserProfile, ReasoningOutput
 from app.scoring import is_disinterested, lowest_component, score_personas, score_publishers, select_personas
 
 
@@ -94,6 +95,66 @@ def test_off_topic_advertiser_scores_near_zero_everywhere():
     )
     scores = score_publishers(profile, load_publishers())
     assert scores[0].score < 10.0, f"off-topic advertiser still scored {scores[0].score}"
+
+
+def test_irrelevant_publishers_are_never_funded():
+    """Found in production: Velvetline (Gen Z skincare, scoring 11) appeared
+    under "Recommended publishers" for a cleaning-products brand with $500
+    allocated, because a flat top-5 slice plus the 10% budget floor forced it
+    in. Anything below the fit floor must carry no spend."""
+    profile = AdvertiserProfile(
+        raw_input="Refillable, concentrated cleaning products. Skip the single-use plastic bottles.",
+        inferred_category="household",
+        inferred_subcategories=["cleaning"],
+        catalog_categories=["home", "home_goods", "household", "non_toxic", "refillable_products"],
+        price_tier="mid",
+        brand_tone=["sustainable", "practical"],
+        confidence=0.8,
+    )
+    publishers = load_publishers()
+    campaign = assemble_campaign(
+        profile=profile,
+        publisher_scores=score_publishers(profile, publishers),
+        publisher_records={p.id: p for p in publishers},
+        persona_scores=select_personas(score_personas(profile, load_personas()), limit=5),
+        reasoning=ReasoningOutput(recommended=[], excluded=[], personas=[]),
+        creatives=[],
+        total_budget_usd=5000.0,
+        flight_days=14,
+    )
+    for publisher in campaign.publishers:
+        if publisher.budget_allocation_usd > 0:
+            assert publisher.match_score >= PUBLISHER_FIT_FLOOR, (
+                f"{publisher.name} scored {publisher.match_score} but was funded "
+                f"${publisher.budget_allocation_usd}"
+            )
+
+
+def test_no_match_campaign_allocates_no_budget():
+    """A config whose banner says "do not launch against them" must not also
+    hand a downstream system a spend plan."""
+    profile = AdvertiserProfile(
+        raw_input="B2B SaaS for dental practices.",
+        inferred_category="software",
+        inferred_subcategories=["b2b_saas"],
+        catalog_categories=[],
+        price_tier="premium",
+        brand_tone=["professional"],
+        confidence=0.75,
+    )
+    publishers = load_publishers()
+    campaign = assemble_campaign(
+        profile=profile,
+        publisher_scores=score_publishers(profile, publishers),
+        publisher_records={p.id: p for p in publishers},
+        persona_scores=select_personas(score_personas(profile, load_personas()), limit=5),
+        reasoning=ReasoningOutput(recommended=[], excluded=[], personas=[]),
+        creatives=[],
+        total_budget_usd=5000.0,
+        flight_days=14,
+    )
+    assert campaign.viability.status == "no_match"
+    assert sum(p.budget_allocation_usd for p in campaign.publishers) == 0
 
 
 def test_selection_honors_the_briefs_three_variant_minimum():

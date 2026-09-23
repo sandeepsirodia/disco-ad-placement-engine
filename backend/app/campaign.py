@@ -30,6 +30,13 @@ TOP_PUBLISHERS = 5
 TOP_PERSONAS = 5
 BUDGET_FLOOR_PCT = 10.0
 
+# A publisher below this isn't a recommendation, it's filler. Taking a flat
+# top-5 without this put Velvetline (Gen Z skincare, scoring 11) in the
+# recommended list for a cleaning-products brand, and the 10% budget floor
+# then handed it $500. Same floor logic as PERSONA_FIT_FLOOR - fixed there
+# first, and this is its sibling.
+PUBLISHER_FIT_FLOOR = 35.0
+
 PERFORMANCE_SIGNALS = ["compete on price", "cheap", "discount", "affordable", "half the cost", "same formulation"]
 
 # Realistic retail-media bands. Deliberately NOT derived linearly from AOV -
@@ -220,8 +227,16 @@ def assemble_campaign(
     total_budget_usd: float,
     flight_days: int,
 ) -> CampaignConfig:
-    recommended_scores = publisher_scores[:TOP_PUBLISHERS]
-    excluded_scores = publisher_scores[TOP_PUBLISHERS:]
+    viability = assess_viability(publisher_scores[0].score if publisher_scores else 0.0, profile)
+
+    # Only publishers that clear the floor are real recommendations. When none
+    # do - or when the catalog can't serve this advertiser at all - the
+    # ranking is still shown for transparency, but with no money behind it:
+    # a config that says "do not launch" must not also contain a spend plan.
+    qualified = [s for s in publisher_scores if s.score >= PUBLISHER_FIT_FLOOR][:TOP_PUBLISHERS]
+    fundable = bool(qualified) and viability.status != "no_match"
+    recommended_scores = qualified if fundable else publisher_scores[:TOP_PUBLISHERS]
+    excluded_scores = [s for s in publisher_scores if s not in recommended_scores]
     selected_personas = persona_scores[:TOP_PERSONAS]
 
     reason_by_publisher = {r.publisher_id: r.reasoning for r in reasoning.recommended}
@@ -235,10 +250,13 @@ def assemble_campaign(
     aov_min, aov_max = min(all_aovs), max(all_aovs)
     bid_ranges = [suggested_bid_range(bid_model, r, aov_min, aov_max) for r in recommended_records]
 
-    allocations = allocate_budget_pct([s.score for s in recommended_scores])
-    allocations = cap_by_inventory(
-        allocations, recommended_records, bid_ranges, bid_model, total_budget_usd, flight_days
-    )
+    if fundable:
+        allocations = allocate_budget_pct([s.score for s in recommended_scores])
+        allocations = cap_by_inventory(
+            allocations, recommended_records, bid_ranges, bid_model, total_budget_usd, flight_days
+        )
+    else:
+        allocations = [0.0] * len(recommended_scores)
 
     publishers = []
     for score, record, pct, bid_range in zip(recommended_scores, recommended_records, allocations, bid_ranges):
@@ -288,7 +306,7 @@ def assemble_campaign(
 
     return CampaignConfig(
         advertiser=profile,
-        viability=assess_viability(recommended_scores[0].score if recommended_scores else 0.0, profile),
+        viability=viability,
         targeting=build_targeting(profile, recommended_records),
         publishers=publishers,
         excluded_publishers=excluded,
