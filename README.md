@@ -14,7 +14,7 @@ make dev                              # backend :8000, frontend :5173
 
 `GET /health` is a cheap liveness endpoint (used to keep the free hosted instance awake without invoking the pipeline). `make test` runs the scoring suite; `make types` regenerates the frontend types from the backend's Pydantic models. The key stays server-side — `.env` is gitignored and the React bundle contains no key handling.
 
-**Stack:** React + TypeScript + shadcn/ui · Python + FastAPI + Pydantic · any OpenAI-compatible LLM (defaults to Gemini; switching providers is three env vars, not a code change).
+**Stack:** React + TypeScript + shadcn/ui · Python + FastAPI + Pydantic · any OpenAI-compatible LLM (defaults to Gemini; switching providers is a handful of env vars, not a code change).
 
 ## The bet everything follows from
 

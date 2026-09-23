@@ -4,9 +4,10 @@
 instead of writing an adapter layer to make Claude/Gemini/etc look alike.
 The OpenAI SDK's chat.completions API is that interface - Gemini, Groq,
 Mistral, DeepSeek, local Ollama, and OpenAI itself all implement it. Switching
-providers is a base_url/api_key/model change (three env vars), not a
-rewrite. If a provider without OpenAI compatibility is ever needed, only this
-one file changes - every caller goes through generate_structured/generate_text.
+providers is a base_url/api_key/model/embed_model change (four env vars, see
+backend/env.sample), not a rewrite. If a provider without OpenAI compatibility
+is ever needed, only this file and semantic.py change - every caller goes
+through generate_structured/generate_text/similarity.
 """
 
 from __future__ import annotations
