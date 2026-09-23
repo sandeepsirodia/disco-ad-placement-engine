@@ -6,6 +6,8 @@ An advertiser describes their business in a sentence. The system returns ranked 
 
 You'll need your own Gemini API key — free, instant, no billing setup: **https://aistudio.google.com/apikey**
 
+> **Running the hosted demo instead?** It's on a free instance that sleeps when idle, so the first request after a quiet period takes ~50s to wake — after that it's ~15s per campaign. It runs on a throwaway key with a 20-campaign/hour per-IP cap; run it locally for unlimited use.
+
 ```bash
 cp backend/env.sample backend/.env    # paste your key on the LLM_API_KEY line
 make install

@@ -16,3 +16,9 @@ services:
         value: gemini-flash-latest
       - key: LLM_EMBED_MODEL
         value: gemini-embedding-001
+      # Public URL on a shared key: cap per-IP usage so a stray script can't
+      # drain the quota mid-review. Set to 0 to disable.
+      - key: RATE_LIMIT_REQUESTS
+        value: "20"
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "3600"
