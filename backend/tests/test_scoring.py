@@ -8,7 +8,15 @@ fabricated fixture that could drift from the actual data.
 from app.data import load_personas, load_publishers
 from app.campaign import PUBLISHER_FIT_FLOOR, assemble_campaign
 from app.models import AdvertiserProfile, ReasoningOutput
-from app.scoring import is_disinterested, lowest_component, score_personas, score_publishers, select_personas
+from app.scoring import (
+    UNKNOWN_SIGNAL,
+    is_disinterested,
+    lowest_component,
+    score_personas,
+    score_publishers,
+    select_personas,
+    tone_fit,
+)
 
 
 def senior_dog_food_profile() -> AdvertiserProfile:
@@ -163,3 +171,15 @@ def test_selection_honors_the_briefs_three_variant_minimum():
     profile = senior_dog_food_profile()
     scores = score_personas(profile, load_personas())
     assert len(select_personas(scores, limit=5)) >= 3
+
+
+def test_unmeasurable_tone_is_neutral_not_zero():
+    """Regression: when embeddings are unavailable the keyword matcher scores
+    nearly every prose pair at 0, which dragged every publisher down ~15
+    points and shifted campaigns across the viability thresholds those same
+    scores are compared against. Absent evidence must be neutral."""
+    profile = senior_dog_food_profile()
+    publishers = load_publishers()
+    # A publisher whose notes share no literal token with the brand tone.
+    velvetline = next(p for p in publishers if p.id == "pub_013")
+    assert tone_fit(profile, velvetline) >= UNKNOWN_SIGNAL - 0.01

@@ -57,6 +57,21 @@ GATE_FLOOR = 0.15
 # Catalog-term overlaps needed for a full match bonus.
 FULL_OVERLAP_AT = 4
 
+# What an unmeasurable signal contributes. Absent evidence is not negative
+# evidence: when embeddings are unavailable the keyword matcher scores nearly
+# every prose pair at 0, which used to drag every publisher down ~15 points
+# and shift campaigns across the viability thresholds those scores are
+# compared against. Same treatment audience_fit already gets with no demo signal.
+UNKNOWN_SIGNAL = 50.0
+
+
+def _keyword_or_unknown(hits: int, total: int) -> float:
+    """Keyword overlap when it finds something; neutral when it finds nothing,
+    since no shared tokens is not the same as no tonal match."""
+    if hits == 0:
+        return UNKNOWN_SIGNAL
+    return min(100.0, 100.0 * hits / total)
+
 
 def _advertiser_terms(profile: AdvertiserProfile) -> set[str]:
     """Catalog-vocabulary terms drive matching. The model's own free-text
@@ -171,13 +186,13 @@ def tone_fit(profile: AdvertiserProfile, publisher: PublisherRecord) -> float:
     "eco-motivated buyers" does not, despite being the same claim.
     """
     if not profile.brand_tone:
-        return 50.0
+        return UNKNOWN_SIGNAL
     semantic = similarity(", ".join(profile.brand_tone), publisher.notes)
     if semantic is not None:
         return semantic
     notes = publisher.notes.lower()
     hits = sum(1 for term in profile.brand_tone if term.lower() in notes)
-    return min(100.0, 100.0 * hits / len(profile.brand_tone))
+    return _keyword_or_unknown(hits, len(profile.brand_tone))
 
 
 def lowest_component(breakdown: PublisherScoreBreakdown) -> str:
@@ -233,13 +248,13 @@ def persona_price_fit(profile: AdvertiserProfile, persona: PersonaRecord, aov_mi
 
 def messaging_fit(profile: AdvertiserProfile, persona: PersonaRecord) -> float:
     if not profile.brand_tone:
-        return 50.0
+        return UNKNOWN_SIGNAL
     semantic = similarity(", ".join(profile.brand_tone), ", ".join(persona.messaging_preferences))
     if semantic is not None:
         return semantic
     prefs_text = " ".join(persona.messaging_preferences).lower()
     hits = sum(1 for term in profile.brand_tone if term.lower() in prefs_text)
-    return min(100.0, 100.0 * hits / len(profile.brand_tone))
+    return _keyword_or_unknown(hits, len(profile.brand_tone))
 
 
 def is_disinterested(profile: AdvertiserProfile, persona: PersonaRecord) -> bool:

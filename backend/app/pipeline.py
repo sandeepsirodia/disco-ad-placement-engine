@@ -11,6 +11,7 @@ from app.extraction import extract_advertiser_profile
 from app.models import CampaignConfig
 from app.reasoning import generate_reasoning
 from app.scoring import score_personas, score_publishers, select_personas
+from app.semantic import prime
 
 
 async def run_pipeline(
@@ -23,6 +24,15 @@ async def run_pipeline(
 
     publishers = load_publishers()
     personas = load_personas()
+
+    # One batched embedding request for every string scoring will compare,
+    # instead of ~31 separate ones. Cached for the process, so subsequent runs
+    # only pay for the advertiser's own tone.
+    tone = ", ".join(profile.brand_tone)
+    await asyncio.to_thread(
+        prime,
+        [tone, *(p.notes for p in publishers), *(", ".join(p.messaging_preferences) for p in personas)],
+    )
 
     # Steps 2 & 3 - deterministic, synchronous, effectively instant.
     publisher_scores = score_publishers(profile, publishers)

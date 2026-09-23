@@ -65,8 +65,15 @@ closed set, so equality is exactly right — the trick is constraining extractio
 to *the catalog's own vocabulary* so both sides speak it. Tone and messaging
 are free prose on both sides, where "sustainable" and "eco-motivated buyers"
 are the same claim with zero shared tokens, so those use embeddings
-(`app/semantic.py`, cached per catalog string, keyword fallback if a provider
-doesn't serve `/embeddings`).
+(`app/semantic.py`). All strings are embedded in one batched request per run
+and cached for the process.
+
+When embeddings are unavailable — a provider without `/embeddings`, or an
+exhausted quota — the signal degrades to keyword matching, and a keyword miss
+returns **neutral (50), not zero**. That distinction matters: scoring an
+unmeasurable signal as zero dragged every publisher down ~15 points and
+shifted campaigns across the viability thresholds those scores are compared
+against. The failure is logged rather than silent, which is how it was found.
 
 ## Decision log
 
