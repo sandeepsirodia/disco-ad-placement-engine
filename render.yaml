@@ -1,0 +1,18 @@
+# Render blueprint. In the Render dashboard: New > Blueprint > pick this repo.
+# LLM_API_KEY is marked sync:false so it is entered in the dashboard and never
+# committed here.
+services:
+  - type: web
+    name: disco-ad-placement-engine
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai/
+      - key: LLM_MODEL
+        value: gemini-flash-latest
+      - key: LLM_EMBED_MODEL
+        value: gemini-embedding-001

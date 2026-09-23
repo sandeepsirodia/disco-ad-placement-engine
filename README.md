@@ -45,12 +45,17 @@ Defined once as Pydantic models; the frontend's types are generated from the res
 ## What I cut
 
 - **Multi-turn disambiguation** — low-confidence input gets one clear "add detail and re-run" prompt, not a chat loop.
-- **Embedding similarity** for `tone_fit`/`messaging_fit` — keyword matching at 20 publishers. This is the most visible remaining limitation: a sustainable activewear brand scores The Fitness Enthusiast "weak · 28" because its `messaging_preferences` ("performance claims") share no literal tokens with the brand's tone ("sustainable"). Semantically it's a strong match; lexically it's invisible.
 - **Persistence, auth, an LLM-judge eval suite, image creative** — none change what the prototype demonstrates.
+
+## Where the two matching strategies split
+
+Category matching is a **closed set**, so string equality is exactly right — and constraining extraction to the catalog's vocabulary is what makes it work. Tone and messaging are **free prose on both sides**, where literal overlap is the wrong tool entirely: "sustainable" and "eco-motivated buyers" are the same claim with zero shared tokens. Those two signals use embedding similarity (`app/semantic.py`), cached per catalog string since the catalog is static, and falling back to keywords if a provider doesn't serve `/embeddings`.
+
+Measured effect: The Fitness Enthusiast against a sustainable activewear brand moved from `weak · 28` to `moderate · 34`, and genuinely good publisher matches rose across the board (Movewell 80 → 86, Cloudfoot 72 → 81) **while off-topic advertisers stayed pinned at 6–18** — the category gate still does its job, which is the property that mattered.
 
 ## Next week
 
-1. **Embeddings for the soft signals** — fixes the limitation above directly, and is the same mechanism the real system needs for candidate retrieval over a 150M-profile graph rather than a 20-row loop.
+1. **Use the embeddings for retrieval, not just scoring.** They currently re-rank 20 rows in a loop. The same vectors are what candidate generation over a 150M-profile graph would run on — ANN retrieval first, then this exact named-feature re-ranker on top. The shape is already right; only the retrieval step is missing.
 2. **A labeled eval set with regression runs per prompt change.** The current script prints 15 outputs for a human to read; it doesn't fail a build. That's the right next investment — every bug above would have been caught earlier by it.
 3. **Persist the extraction to make rankings genuinely reproducible.** Extraction runs at `temperature=0`, which narrows run-to-run variance but does not remove it — the same advertiser can still yield a slightly different catalog-term set and therefore a different ranking. For an auditable ad system that's not good enough, and no temperature setting fixes it: reproducibility comes from *storing* the extracted profile against the input and re-scoring from the stored copy, not from hoping the model repeats itself. Same change also cuts the ~18s latency on repeat runs.
 4. **Calibrate the weights against outcomes instead of judgment.** `PUBLISHER_WEIGHTS` is currently four numbers I chose. With click/conversion data they should be fit, and the deterministic scorer is exactly the right shape to fit them in.
