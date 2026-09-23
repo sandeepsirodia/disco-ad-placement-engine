@@ -9,6 +9,7 @@ an edit in one place, not a rewrite. See docs/plan.md for why this matters.
 
 from __future__ import annotations
 
+from app.semantic import similarity
 from app.models import (
     AdvertiserProfile,
     PersonaRecord,
@@ -162,8 +163,18 @@ def audience_fit(profile: AdvertiserProfile, publisher: PublisherRecord) -> floa
 
 
 def tone_fit(profile: AdvertiserProfile, publisher: PublisherRecord) -> float:
+    """Semantic where available, keyword where not.
+
+    Both sides are free prose here, so literal token overlap is the wrong
+    tool: a "premium, health-conscious" brand and a publisher noted as
+    "responsive to premium positioning" match, but "sustainable" vs
+    "eco-motivated buyers" does not, despite being the same claim.
+    """
     if not profile.brand_tone:
         return 50.0
+    semantic = similarity(", ".join(profile.brand_tone), publisher.notes)
+    if semantic is not None:
+        return semantic
     notes = publisher.notes.lower()
     hits = sum(1 for term in profile.brand_tone if term.lower() in notes)
     return min(100.0, 100.0 * hits / len(profile.brand_tone))
@@ -223,6 +234,9 @@ def persona_price_fit(profile: AdvertiserProfile, persona: PersonaRecord, aov_mi
 def messaging_fit(profile: AdvertiserProfile, persona: PersonaRecord) -> float:
     if not profile.brand_tone:
         return 50.0
+    semantic = similarity(", ".join(profile.brand_tone), ", ".join(persona.messaging_preferences))
+    if semantic is not None:
+        return semantic
     prefs_text = " ".join(persona.messaging_preferences).lower()
     hits = sum(1 for term in profile.brand_tone if term.lower() in prefs_text)
     return min(100.0, 100.0 * hits / len(profile.brand_tone))

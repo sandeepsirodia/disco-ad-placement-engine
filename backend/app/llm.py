@@ -32,6 +32,14 @@ def _client() -> OpenAI:
     return OpenAI(api_key=api_key, base_url=os.environ.get("LLM_BASE_URL", DEFAULT_BASE_URL))
 
 
+def client_or_none() -> OpenAI | None:
+    """For optional paths (embeddings) that degrade rather than fail."""
+    try:
+        return _client()
+    except RuntimeError:
+        return None
+
+
 def _model() -> str:
     return os.environ.get("LLM_MODEL", DEFAULT_MODEL)
 
