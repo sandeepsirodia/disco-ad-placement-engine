@@ -23,6 +23,14 @@ app.add_middleware(
 app.include_router(router)
 
 
+@app.get("/health")
+def health() -> dict[str, str]:
+    """Cheap liveness target. Exists so an uptime monitor keeping the free
+    instance awake hits this instead of /api/campaign, which would run the
+    whole LLM pipeline on every ping."""
+    return {"status": "ok"}
+
+
 @app.exception_handler(RuntimeError)
 async def config_error_handler(request: Request, exc: RuntimeError) -> JSONResponse:
     # Surfaces llm.py's "LLM_API_KEY is not set" message plainly instead of a
